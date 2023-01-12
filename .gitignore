@@ -1,0 +1,10 @@
+# python
+__pycache__
+.ipynb_checkpoints
+
+# macOS Finder display preferences
+.DS_Store
+
+# example notebooks
+real_data.ipynb
+toy_data.ipynb
