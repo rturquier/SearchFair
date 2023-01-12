@@ -6,6 +6,7 @@ Authors: Robin Guillot, Grégoire Retourné, Rémi Turquier
 
 import pandas as pd
 from searchfair import SearchFair
+from sklearn.model_selection import train_test_split
 
 data_url = ("https://archive.ics.uci.edu/ml/"
             + "machine-learning-databases/credit-screening/crx.data")
@@ -22,3 +23,8 @@ credit_df = (
 y_data = credit_df.A1
 x_data = credit_df.loc[:, ["A9", "A10", "A12"]]
 s_data = credit_df.A16
+
+x_train, x_test, y_train, y_test, s_train, s_test = (
+    train_test_split(x_data, y_data, s_data,
+                     train_size=0.80, shuffle=True)
+)
