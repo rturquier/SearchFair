@@ -9,8 +9,12 @@ from searchfair import SearchFair
 from sklearn.model_selection import train_test_split
 import examples.utils as ut
 import numpy as np
+from sklearn.model_selection import GridSearchCV
 
-# ------ Functions -------
+import warnings
+warnings.filterwarnings('ignore')
+
+# %% ------ Functions -------
 def print_clf_stats(model, x_train, x_test, y_train, y_test, s_train, s_test):
     """Print classifier stats (function written by Lohaus et al.)"""
     train_acc = ut.get_accuracy(np.sign(model.predict(x_train)), y_train)
@@ -31,7 +35,7 @@ def print_clf_stats(model, x_train, x_test, y_train, y_test, s_train, s_test):
     print("DDP: %0.4f%%" % (test_DDP * 100),
           "DEO: %0.4f%%" % (test_DEO * 100))
 
-# ------ Main code -------
+# %% ------ Main code -------
 data_url = ("https://archive.ics.uci.edu/ml/"
             + "machine-learning-databases/credit-screening/crx.data")
 column_renamer = {index: "A" + str(index + 1) for index in range(16)}
@@ -54,7 +58,7 @@ x_train, x_test, y_train, y_test, s_train, s_test = (
 )
 
 fairness_notion = 'DDP'
-kernel = 'linear'
+kernel = 'rbf'
 verbose = True
 reg_beta = 0.0001
 
@@ -66,4 +70,36 @@ linear_model_DDP = SearchFair(reg_beta=reg_beta,
 linear_model_DDP.fit(x_train, y_train, s_train=s_train)
 
 print_clf_stats(linear_model_DDP,
+                x_train, x_test, y_train, y_test, s_train, s_test)
+
+
+# %% Cross-validation
+kernel = "rbf"
+cv_model = SearchFair(kernel=kernel,
+                      fairness_notion=fairness_notion,
+                      verbose=0)
+
+# regularization parameter beta
+beta_params = [0.0001, 0.001, 0.01]
+cv_params = {'reg_beta': beta_params}
+
+if kernel == 'rbf':
+    n_features = x_data.shape[1]
+    default_width = 1/n_features
+    order_of_magn = np.floor(np.log10(default_width))
+    kernel_widths = [10**(order_of_magn), default_width, 10**(order_of_magn+1)]
+    cv_params['gamma'] = kernel_widths
+
+grid_clf = GridSearchCV(cv_model,
+                        cv_params,
+                        cv=3,
+                        verbose=1,
+                        n_jobs=1,
+                        scoring='accuracy',
+                        refit=True)
+grid_clf.fit(x_train, y_train, s_train=s_train)
+
+print(grid_clf.best_params_)
+
+print_clf_stats(grid_clf,
                 x_train, x_test, y_train, y_test, s_train, s_test)
